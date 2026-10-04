@@ -8,7 +8,7 @@ Layering Azure-level access control on top of the file server from Lab 1, scoped
 ![Status](https://img.shields.io/badge/Status-Complete-success)
 
 ## 🎥 Demo Video
-[Watch me build this lab end-to-end →](PASTE_YOUR_LINK_HERE)
+[Watch me build this lab end-to-end →](https://www.loom.com/share/fac1e2e3537b4b0eb3959cb9b808f232)
 
 ## Overview
 
@@ -473,6 +473,48 @@ az role assignment list --scope $(az vm show -g RG-FileServerLab -n FS01 --query
 az login          # Log back in as your own account
 az account show   # Confirm your subscription is active
 ```
+
+## Screenshots
+
+### `rbac.tf`: Three Assignments, One Scope
+![rbac.tf in VS Code showing the Owner, Virtual Machine Contributor, and Reader role assignments](screenshots/01-rbac-tf-role-assignments-code.png)
+
+The whole access model fits in 23 lines of Terraform. Every assignment points its `scope` at `data.azurerm_virtual_machine.fs01.id`, so least privilege is defined in version-controlled code instead of being clicked together in the portal.
+
+### `terraform apply`: Exactly 3 Added, Nothing Else Touched
+![terraform apply output showing 3 role assignments created and Apply complete with 3 added, 0 changed, 0 destroyed](screenshots/02-terraform-apply-complete.png)
+
+The plan is `3 to add, 0 to change, 0 to destroy`, and every resulting role assignment ID ends in `/virtualMachines/FS01/providers/Microsoft.Authorization/...`. That proves the deployment layered access onto Lab 1's VM without creating, modifying, or destroying any of Lab 1's infrastructure.
+
+### FS01 Access Control (IAM): Three Personas, Three Roles
+![FS01 IAM blade showing Owner, Reader, and Virtual Machine Contributor assignments](screenshots/03-fs01-iam-role-assignments.png)
+
+All three Terraform-created assignments are live on FS01: SysAdmin as Owner, Auditor as Reader, SupportTech as Virtual Machine Contributor. Each shows a scope of **This resource**, not *Inherited*, which proves the roles are pinned to FS01's resource ID and don't spill over to DC01, CLIENT01, or the rest of `RG-FileServerLab`.
+
+### SupportTech's Portal View: FS01 Only
+![Azure portal Resources list for the SupportTech account showing only FS01](screenshots/04-supporttech-portal-fs01-view.png)
+
+Signed in as SupportTech, the only resource surfaced in the portal is FS01. The account has no footprint anywhere else in the subscription, which is exactly what a help desk login with a single-VM scope should look like.
+
+### Activity Log: Every SupportTech Action Is Attributed
+![Activity log filtered to the SupportTech initiator showing Restart Virtual Machine and Run Command operations](screenshots/05-activity-log-supporttech-restart-runcommand.png)
+
+Filtered to SupportTech as the event initiator, the log shows a successful VM restart (Accepted → Started → Succeeded) and three Run Command operations. That proves VM Contributor grants the operational control a help desk tech needs, and that every action is tied to a named identity for later audit. Run Command executes as SYSTEM inside the guest OS, so VM Contributor is more powerful than "restart only." That's worth knowing before handing this role to anyone in production.
+
+### SupportTech Restarts FS01 from the CLI
+![Azure CLI az vm restart against FS01 returning status Succeeded](screenshots/06-supporttech-cli-vm-restart-succeeded.png)
+
+Logged in as SupportTech, `az vm restart` against FS01 returns `"status": "Succeeded"`. This is the help desk scenario from the top of this README working end to end: an unresponsive server is brought back without escalating to a senior admin.
+
+### SupportTech Cannot Grant Access
+![FS01 Access control blade with Add role assignment disabled for SupportTech](screenshots/07-supporttech-iam-add-role-disabled.png)
+
+On FS01's Access control blade, **Add role assignment** is greyed out for SupportTech. VM Contributor can operate the VM but cannot hand out permissions on it, which closes off the most common path to privilege escalation.
+
+### SupportTech Has No Entra ID Directory Rights
+![Entra ID notification reading User creation failed, insufficient privileges](screenshots/08-supporttech-entra-user-creation-denied.png)
+
+An attempt to create a user in Entra ID fails with *Insufficient privileges*. Azure RBAC roles govern resources, while Entra ID directory roles govern identities, and they're two separate permission systems. A VM role on FS01 grants nothing in the directory.
 
 ## Teardown
 
