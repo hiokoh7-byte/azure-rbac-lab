@@ -56,28 +56,7 @@ This lab deploys **zero new infrastructure**. It reads Lab 1's resource group an
 
 Azure RBAC operates at the Resource Manager control plane, completely separate from the NTFS permissions inside the VM's OS. All three role assignments are scoped to FS01's resource ID only. DC01 and CLIENT01 sit in the same resource group but have no assignments in this lab.
 
-```
-Azure Subscription
-┌───────────────────────────────┐   ┌──────────────────────────────────────────────┐
-│ RG-TerraformState             │   │ RG-FileServerLab  (Lab 1, read-only via data sources) │
-│  Storage Account               │   │                                                │
-│  rbac-lab.terraform.tfstate    │   │  DC01            FS01 ◄── RBAC scope target   │
-└───────────────────────────────┘   │  Domain          File Server VM               │
-                                     │  Controller       Owner       → SysAdmin      │
-                                     │  No RBAC          VM Contributor → SupportTech│
-                                     │  assignments       Reader      → Auditor      │
-                                     │  Out of scope      Scope = FS01 resource ID   │
-                                     │                                                │
-                                     │  CLIENT01                                     │
-                                     │  Workstation                                  │
-                                     │  No RBAC assignments                          │
-                                     │  Out of scope                                 │
-                                     └──────────────────────────────────────────────┘
-
-SysAdmin (Owner)        Full control + RBAC management       Can delete VM
-SupportTech (VM Contrib) Start / Stop / Restart               Cannot delete VM
-Auditor (Reader)         View only, no actions                Cannot start/stop VM
-```
+![RBAC lab architecture: Owner, VM Contributor, and Reader role assignments scoped to FS01 only, with DC01 and CLIENT01 unaffected](diagrams/rbac-lab-architecture.png)
 
 ## Why Each Component Exists
 
