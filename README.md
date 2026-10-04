@@ -8,7 +8,7 @@ Layering Azure-level access control on top of the file server from Lab 1, scoped
 ![Status](https://img.shields.io/badge/Status-Complete-success)
 
 ## 🎥 Demo Video
-[Watch me build this lab end-to-end →](https://www.loom.com/share/fac1e2e3537b4b0eb3959cb9b808f232)
+[Watch me go through this lab →](https://www.loom.com/share/fac1e2e3537b4b0eb3959cb9b808f232)
 
 ## Overview
 
